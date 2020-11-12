@@ -39,18 +39,7 @@ char filename[] = "YYYYMMDD_HHMMSS";
 
 ////// Thermistor
 int ThermistorPin = 0; //A0
-float Vo;
-float R1 = 10000;
-float logR2, R2, T;
-float c1 = 1.009249522e-03, c2 = 2.378405444e-04, c3 = 2.019202697e-07;
 float ColdJ_T1, ColdJ_T2, ColdJ_T3, ColdJ_T4 ; //°C storage of cold junction temperature form thermistor
-
-//  Vo = analogRead(ThermistorPin);
-//  R2 = R1 * (1023.0 / (float)Vo - 1.0);
-//  logR2 = log(R2);
-//  T = (1.0 / (c1 + c2*logR2 + c3*logR2*logR2*logR2));
-//  Tc = T - 273.15;
-
 
 ////// Thermocouple
 //Adafruit_MAX31856 maxthermo = Adafruit_MAX31856(10, 11, 12, 13);
@@ -273,11 +262,11 @@ void writeDATA(DateTime myTime)
   }
   /////// format data to csv with sep = ";"
 
-  outTxt.println("Thermocouple 1,Thermocouple 2,Thermocouple 3,Thermocouple 4");
-  outTxt.println("Hot T;" + String(HotJ_T1) + ";" + String(HotJ_T2) + ";" + String(HotJ_T3) + ";" + String(HotJ_T4));
-  outTxt.println("MAX T;" + String(HotJ_cT1) + ";" + String(HotJ_cT2) + ";" + String(HotJ_cT3) + ";" + String(HotJ_cT4));
-  outTxt.println("Fault;" + String(faulttxt1) + ";" + String(faulttxt2) + ";" + String(faulttxt3) + ";" + String(faulttxt4));
-  outTxt.println("Cold T;" + String(ColdJ_T1) + ";" + String(ColdJ_T2) + ";" + String(ColdJ_T3) + ";" + String(ColdJ_T4));
+ outTxt.println(";Hot_T;MAX_T;Fault;Cold_T");
+  outTxt.println("Thermocouple_1;" + String(HotJ_T1) + ";" + String(HotJ_cT1) + ";" + String(faulttxt1) + ";" + String(ColdJ_T1));
+  outTxt.println("Thermocouple_2;" + String(HotJ_T2) + ";" + String(HotJ_cT2) + ";" + String(faulttxt2) + ";" + String(ColdJ_T2));
+  outTxt.println("Thermocouple_3;" + String(HotJ_T3) + ";" + String(HotJ_cT3) + ";" + String(faulttxt3) + ";" + String(ColdJ_T3));
+  outTxt.println("Thermocouple_4;" + String(HotJ_T4) + ";" + String(HotJ_cT4) + ";" + String(faulttxt4) + ";" + String(ColdJ_T4));
 
   // Update the file's creation date, modify date, and access date.
   outTxt.timestamp(T_CREATE, myTime.year(), myTime.month(), myTime.day(),
