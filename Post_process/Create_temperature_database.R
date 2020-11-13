@@ -70,16 +70,55 @@ Tdif=Tcj-To
 num<-Tdif*(p1+Tdif*(p2+Tdif*(p3+p4*Tdif)))
 denom<-1+Tdif*(q1+q2*Tdif)
 
-if (denom!=0){
-  Vcj = Vo + num/denom
-}
-
+denom[denom==0]<-0.00000000000001 # avoid division 0
+Vcj = Vo + num/denom
 # Step 4 - We calculate Bud temperature from the hot junction voltage
+# real thermocouple compensated voltage
+
+Vtc<- all_data$Hot_T + Vcj
+Vdif<-Vtc-Vo
+
+# The following table is of calibration coefficients for Type T thermocouple wires.
+# http://www.mosaic-industries.com/embedded-systems/microcontroller-projects/temperature-measurement/thermocouple/type-t-calibration-table
+#                                                   Range
+# Voltage:	    -6.18 to -4.648 mV	| -4.648 to 0 mV	| 0 to 9.288 mV	| 9.288 to 20.872 mV
+# Temperature:	-250 to -150°C	    | -150 to 0°C	    | 0 to 200°C	  | 200 to 400°C
+#                                              Coefficients
+# T0	          -1.9243000E+02	    | -6.0000000E+01	| 1.3500000E+02	| 3.0000000E+02
+# V0	          -5.4798963E+00	    | -2.1528350E+00	| 5.9588600E+00	| 1.4861780E+01
+# p1	          5.9572141E+01	      | 3.0449332E+01	  | 2.0325591E+01	| 1.7214707E+01
+# p2	          1.9675733E+00	      | -1.2946560E+00	| 3.3013079E+00	| -9.3862713E-01
+# p3	          -7.8176011E+01	    | -3.0500735E+00	| 1.2638462E-01	| -7.3509066E-02
+# p4	          -1.0963280E+01	    | -1.9226856E-01	| -8.2883695E-04|	2.9576140E-04
+# q1	          2.7498092E-01	      | 6.9877863E-03	  | 1.7595577E-01	| -4.8095795E-02
+# q2	          -1.3768944E+00	    | -1.0596207E-01	| 7.9740521E-03	| -4.7352054E-03
+# q3	          -4.5209805E-01	    | -1.0774995E-02	| 0.0           |	0.0
+
+Vbreaks<-c(-4.648,0,9.288)
+To<-c(	-1.9243000E+02,	-6.0000000E+01,	1.3500000E+02,	3.0000000E+02)
+V0<-c(	-5.4798963E+00,	-2.1528350E+00,	5.9588600E+00,	1.4861780E+01)
+p1<-c(	5.9572141E+01,	3.0449332E+01,	2.0325591E+01,	1.7214707E+01)
+p2<-c(	1.9675733E+00,	-1.2946560E+00,	3.3013079E+00,	-9.3862713E-01)
+p3<-c(	-7.8176011E+01,	-3.0500735E+00,	1.2638462E-01,	-7.3509066E-02)
+p4<-c(	-1.0963280E+01,	-1.9226856E-01,	-8.2883695E-04,	2.9576140E-04)
+q1<-c(	2.7498092E-01,	6.9877863E-03,	1.7595577E-01,	-4.8095795E-02)
+q2<-c(	-1.3768944E+00,	-1.0596207E-01,	7.9740521E-03,	-4.7352054E-03)
+q3<-c(	-4.5209805E-01,	-1.0774995E-02,	0.0,	0.0)
+
+index<-NULL
+index[Vtc<Vbreaks[1]]<-1
+index[(Vtc>Vbreaks[1])&(Vtc<Vbreaks[2])]<-2
+index[(Vtc>Vbreaks[2])&(Vtc<Vbreaks[3])]<-3
+index[Vtc>Vbreaks[3]]<-4
+
+num<-Vdif*(p1[index]+Vdif*(p2[index]+Vdif*(p3[index]+p4[index]*Vdif)))
+denom<-1+Vdif*(q1[index]+Vdif*(q2[index]+q3[index]*Vdif))
+
+denom[denom==0]<-0.00000000000001 # avoid division 0
+
+Thj<-To + num/denom
 
 
-
-
-
-
+all_data<-cbind(all_data,R2,Tcj,Vcj,Vtc, Thj)
 write.table(x=all_data,file="Bud_temperature.txt",col.names = TRUE,sep=";")
 
