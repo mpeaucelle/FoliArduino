@@ -41,7 +41,7 @@ R2 = R1 * (1023.0 / Cold_Vo - 1.0)
 # c2 = 2.378405444e-04
 # c3 = 2.019202697e-07
 # Tk = (1.0 / (c1 + c2*log(R2) + c3*log(R2)*log(R2)*log(R2)))
-# Cold_Tc = Tk - 273.15 # Cold temperature in °C
+# Tcj = Tk - 273.15 # Cold temperature in °C
 
 # Approach 2: simplified version of Steinhart–Hart equation : 1/T = 1/Tref + (1/B) ⋅ ln (R/Rref)
 # use B value from thermistor datasheet
@@ -50,12 +50,31 @@ B = 3988.0 # +/- 0.3%
 Tref = 298.15 # 25°C
 Rref = 10000.0 # 10kohms
 Tk = (B * Tref) / (B + (Tref * log(R2 / Rref)))
-Cold_Tc = Tk - 273.15 # Cold temperature in °C
+Tcj = Tk - 273.15 # Cold temperature in °C
 
-# Step 3 - We convert Cold_Tc in voltage at the cold junction
+# Step 3 - We convert Cold_Tc into voltage at the cold junction
+# lots of information here: http://www.mosaic-industries.com/embedded-systems/microcontroller-projects/temperature-measurement/thermocouple/cold-junction-compensation
+# information on converting temperature to voltage here: http://www.mosaic-industries.com/embedded-systems/microcontroller-projects/temperature-measurement/thermocouple/calibration-table#computing-cold-junction-voltages
+# The following table is of calibration coefficients for Type T thermocouple wires.
+# In our case we are only interested in temperatures between -20 and 70�C corresponding to a range of -0.757 to 2.909 mV
+To<- 2.5000000E+01
+Vo<-	9.9198279E-01
+p1<-	4.0716564E-02
+p2<-	7.1170297E-04
+p3<-	6.8782631E-07
+p4<-	4.3295061E-11
+q1<-	1.6458102E-02
+q2<-	0.0000000E+00
 
+Tdif=Tcj-To
+num<-Tdif*(p1+Tdif*(p2+Tdif*(p3+p4*Tdif)))
+denom<-1+Tdif*(q1+q2*Tdif)
 
-# Step 4 - We calculate 
+if (denom!=0){
+  Vcj = Vo + num/denom
+}
+
+# Step 4 - We calculate Bud temperature from the hot junction voltage
 
 
 
