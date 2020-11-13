@@ -76,7 +76,7 @@ Vcj = Vo + num/denom
 # real thermocouple compensated voltage
 
 Vtc<- all_data$Hot_T + Vcj
-Vdif<-Vtc-Vo
+
 
 # The following table is of calibration coefficients for Type T thermocouple wires.
 # http://www.mosaic-industries.com/embedded-systems/microcontroller-projects/temperature-measurement/thermocouple/type-t-calibration-table
@@ -111,12 +111,13 @@ index[(Vtc>Vbreaks[1])&(Vtc<Vbreaks[2])]<-2
 index[(Vtc>Vbreaks[2])&(Vtc<Vbreaks[3])]<-3
 index[Vtc>Vbreaks[3]]<-4
 
+Vdif<-Vtc-Vo[index]
 num<-Vdif*(p1[index]+Vdif*(p2[index]+Vdif*(p3[index]+p4[index]*Vdif)))
 denom<-1+Vdif*(q1[index]+Vdif*(q2[index]+q3[index]*Vdif))
 
 denom[denom==0]<-0.00000000000001 # avoid division 0
 
-Thj<-To + num/denom
+Thj<-To[index] + num/denom
 
 
 all_data<-cbind(all_data,R2,Tcj,Vcj,Vtc, Thj)
