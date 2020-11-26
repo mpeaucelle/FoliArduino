@@ -8,7 +8,7 @@ all_data<-NULL
 # Step 1 - We merge all data
 
 for ( i in fic ){
-  tmp<-read.table(file = i, sep=";", header = FALSE)
+  tmp<-read.table(file = i, sep=";", header = TRUE)
   year<-rep(as.numeric(substr(i,start = 1,stop=4)),4)
   month<-rep(as.numeric(substr(i,start = 5,stop=6)),4)
   day<-rep(as.numeric(substr(i,start = 7,stop=8)),4)
@@ -35,22 +35,22 @@ R2 = R1 * (1023.0 / Cold_Vo - 1.0)
 # multiple approaches can be used to estimate temperature from a thermistor
 # see https://www.digikey.com/en/maker/projects/how-to-measure-temperature-with-an-ntc-thermistor/4a4b326095f144029df7f2eca589ca54
 
-# # Approach 1: Steinhart–Hart equation: 1/T = A + Bln(R) + C(ln(R))3
-# # coefficients can be estimated by fitting 3 measurements. 
-# c1 = 1.009249522e-03
-# c2 = 2.378405444e-04
-# c3 = 2.019202697e-07
-# Tk = (1.0 / (c1 + c2*log(R2) + c3*log(R2)*log(R2)*log(R2)))
-# Tcj = Tk - 273.15 # Cold temperature in °C
-
-# Approach 2: simplified version of Steinhart–Hart equation : 1/T = 1/Tref + (1/B) ⋅ ln (R/Rref)
-# use B value from thermistor datasheet
-# https://asset.conrad.com/media10/add/160267/c1/-/en/000500682DS01/fiche-technique-500682-thermistance-ntc-tdk-b57861s103f40-s861-1-pcs.pdf
-B = 3988.0 # +/- 0.3%
-Tref = 298.15 # 25°C
-Rref = 10000.0 # 10kohms
-Tk = (B * Tref) / (B + (Tref * log(R2 / Rref)))
+# Approach 1: Steinhart-Hart equation: 1/T = A + Bln(R) + C(ln(R))3
+# coefficients can be estimated by fitting 3 measurements.
+c1 = 1.009249522e-03
+c2 = 2.378405444e-04
+c3 = 2.019202697e-07
+Tk = (1.0 / (c1 + c2*log(R2) + c3*log(R2)*log(R2)*log(R2)))
 Tcj = Tk - 273.15 # Cold temperature in °C
+
+# # Approach 2: simplified version of Steinhart-Hart equation : 1/T = 1/Tref + (1/B) + ln (R/Rref)
+# # use B value from thermistor datasheet
+# # https://asset.conrad.com/media10/add/160267/c1/-/en/000500682DS01/fiche-technique-500682-thermistance-ntc-tdk-b57861s103f40-s861-1-pcs.pdf
+# B = 3988.0 # +/- 0.3%
+# Tref = 298.15 # 25°C
+# Rref = 10000.0 # 10kohms
+# Tk = (B * Tref) / (B + (Tref * log(R2 / Rref)))
+# Tcj = Tk - 273.15 # Cold temperature in °C
 
 # Step 3 - We convert Cold_Tc into voltage at the cold junction
 # lots of information here: http://www.mosaic-industries.com/embedded-systems/microcontroller-projects/temperature-measurement/thermocouple/cold-junction-compensation
@@ -71,9 +71,12 @@ num<-Tdif*(p1+Tdif*(p2+Tdif*(p3+p4*Tdif)))
 denom<-1+Tdif*(q1+q2*Tdif)
 
 denom[denom==0]<-0.00000000000001 # avoid division 0
-Vcj = Vo + num/denom
+Vcj = Vo + num/denom # in mV
+
 # Step 4 - We calculate Bud temperature from the hot junction voltage
 # real thermocouple compensated voltage
+
+all_data$Hot_T<-all_data$Hot_T/1000 ###### convert from �V to mV
 
 Vtc<- all_data$Hot_T + Vcj
 
@@ -96,7 +99,7 @@ Vtc<- all_data$Hot_T + Vcj
 
 Vbreaks<-c(-4.648,0,9.288)
 To<-c(	-1.9243000E+02,	-6.0000000E+01,	1.3500000E+02,	3.0000000E+02)
-V0<-c(	-5.4798963E+00,	-2.1528350E+00,	5.9588600E+00,	1.4861780E+01)
+Vo<-c(	-5.4798963E+00,	-2.1528350E+00,	5.9588600E+00,	1.4861780E+01)
 p1<-c(	5.9572141E+01,	3.0449332E+01,	2.0325591E+01,	1.7214707E+01)
 p2<-c(	1.9675733E+00,	-1.2946560E+00,	3.3013079E+00,	-9.3862713E-01)
 p3<-c(	-7.8176011E+01,	-3.0500735E+00,	1.2638462E-01,	-7.3509066E-02)
