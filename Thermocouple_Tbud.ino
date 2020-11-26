@@ -11,11 +11,11 @@
 #include <SdFat.h>  // https://github.com/greiman/SdFat
 #include <RTClibExtended.h>  // https://github.com/FabioCuomo/FabioCuomo-DS3231
 #include <LowPower.h> //https://github.com/rocketscream/Low-Power
-#include <Adafruit_MAX31856.h>
+#include <Adafruit_MAX31856.h> // install the modified version to read thermocouple voltage here: https://github.com/mpeaucelle/Adafruit_MAX31856
 
 //-------------------------------------------
 // User-settable variables
-int Interval = 30; // Specify the record interval in minutes (default is 15, the arduino will wake up at 0, 15, 30 and 45 minutes every hour)
+int Interval = 2; // Specify the record interval in minutes (default is 15, the arduino will wake up at 0, 15, 30 and 45 minutes every hour)
 int nbRep = 60 / Interval;
 
 
@@ -81,7 +81,7 @@ void setup() {
   //**************************************
   // initialize thermocouple
   maxthermo.begin();
-  maxthermo.setThermocoupleType(MAX31856_VMODE_G32);
+  maxthermo.setThermocoupleType(MAX31856_VMODE_G8);
   //case MAX31856_VMODE_G8: Serial.println("Voltage x8 Gain mode"); break;
   // case MAX31856_VMODE_G32: MAX31856_TCTYPE_T  Serial.println("Voltage x8 Gain mode"); break;
   //maxthermo.setConversionMode(MAX31856_CONTINUOUS);
@@ -226,7 +226,8 @@ void getTT(int relay, int ThermistorPin, float &HotJ_cT, float &HotJ_T, float &C
   delay(2000);
   // We measure temperature from thermocouple (hot junction)
   HotJ_cT = maxthermo.readCJTemperature();
-  HotJ_T = maxthermo.readThermocoupleTemperature();
+  //HotJ_T = maxthermo.readThermocoupleTemperature();
+  HotJ_T = maxthermo.readThermocoupleVoltage(); // only run with the modified version of the max library
   Serial.println(HotJ_cT);
   Serial.println(HotJ_T);
 
@@ -262,7 +263,7 @@ void writeDATA(DateTime myTime)
   }
   /////// format data to csv with sep = ";"
 
- outTxt.println(";Hot_T;MAX_T;Fault;Cold_T");
+ outTxt.println("Sensor;Hot_T;MAX_T;Fault;Cold_T");
   outTxt.println("Thermocouple_1;" + String(HotJ_T1) + ";" + String(HotJ_cT1) + ";" + String(faulttxt1) + ";" + String(ColdJ_T1));
   outTxt.println("Thermocouple_2;" + String(HotJ_T2) + ";" + String(HotJ_cT2) + ";" + String(faulttxt2) + ";" + String(ColdJ_T2));
   outTxt.println("Thermocouple_3;" + String(HotJ_T3) + ";" + String(HotJ_cT3) + ";" + String(faulttxt3) + ";" + String(ColdJ_T3));
