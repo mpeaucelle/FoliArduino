@@ -1,9 +1,9 @@
 /*
   Bud temperature measurement with Thermocouples
-  Last update: 2020/11/11
+  Last update: 2021/01/04
   Part of the Foliarduino project
-   https://foliarduino.com
-   https://github.com/mpeaucelle/FoliArduino
+  https://foliarduino.com/t-type-thermocouples-for-bud-temperature-monitoring/
+  https://github.com/mpeaucelle/FoliArduino
   Marc Peaucelle mpeau.pro@gmail.com
 */
 #include <Wire.h>
@@ -15,7 +15,7 @@
 
 //-------------------------------------------
 // User-settable variables
-int Interval = 2; // Specify the record interval in minutes (default is 15, the arduino will wake up at 0, 15, 30 and 45 minutes every hour)
+int Interval = 15 ; // Specify the record interval in minutes (default is 15, the arduino will wake up at 0, 15, 30 and 45 minutes every hour)
 int nbRep = 60 / Interval;
 
 
@@ -82,10 +82,14 @@ void setup() {
   // initialize thermocouple
   maxthermo.begin();
   maxthermo.setThermocoupleType(MAX31856_VMODE_G8);
+
+  // Note: in voltage mode, we always get the range fault message, even if temperature is correct 
+  // I did not find the problem yet in the MAX31856 library...
+  
+  maxthermo.setTempFaultThreshholds(-4096, 4096); 
   //case MAX31856_VMODE_G8: Serial.println("Voltage x8 Gain mode"); break;
   // case MAX31856_VMODE_G32: MAX31856_TCTYPE_T  Serial.println("Voltage x8 Gain mode"); break;
-  //maxthermo.setConversionMode(MAX31856_CONTINUOUS);
-
+  
   // Pin for relay module set as output
   pinMode(relay1, OUTPUT);
   pinMode(relay2, OUTPUT);
@@ -176,16 +180,10 @@ void SetNewAlarm() {
   } else {
     waketime = 0;
   }
-
-  //if (now.minute() >= 45) {
-  //  waketime = 0;
-  //} else if (now.minute() >= 30) {
-  //  waketime = 45;
-  //} else if (now.minute() >= 15) {
-  //  waketime = 30;
-  //} else {
-  //  waketime = 15;
-  //}
+  // could be included in rep, but too lazy to do it...
+  if (waketime >= 60) {
+    waketime = 0;
+  }
 
   //clear any pending alarms
   RTC.armAlarm(1, false);
@@ -238,7 +236,7 @@ void getTT(int relay, int ThermistorPin, float &HotJ_cT, float &HotJ_T, float &C
   out_txt = 0;
   if (fault) {
     if (fault & MAX31856_FAULT_CJRANGE) Serial.println("Cold Junction Range Fault");
-    if (fault & MAX31856_FAULT_TCRANGE) Serial.println("Thermocouple Range Fault");
+  //  if (fault & MAX31856_FAULT_TCRANGE) Serial.println("Thermocouple Range Fault"); // removed in VMODE the time to find the problem
     if (fault & MAX31856_FAULT_CJHIGH)  Serial.println("Cold Junction High Fault");
     if (fault & MAX31856_FAULT_CJLOW)   Serial.println("Cold Junction Low Fault");
     if (fault & MAX31856_FAULT_TCHIGH)  Serial.println("Thermocouple High Fault");
@@ -263,7 +261,7 @@ void writeDATA(DateTime myTime)
   }
   /////// format data to csv with sep = ";"
 
- outTxt.println("Sensor;Hot_T;MAX_T;Fault;Cold_T");
+  outTxt.println("Sensor;Hot_T;MAX_T;Fault;Cold_T");
   outTxt.println("Thermocouple_1;" + String(HotJ_T1) + ";" + String(HotJ_cT1) + ";" + String(faulttxt1) + ";" + String(ColdJ_T1));
   outTxt.println("Thermocouple_2;" + String(HotJ_T2) + ";" + String(HotJ_cT2) + ";" + String(faulttxt2) + ";" + String(ColdJ_T2));
   outTxt.println("Thermocouple_3;" + String(HotJ_T3) + ";" + String(HotJ_cT3) + ";" + String(faulttxt3) + ";" + String(ColdJ_T3));
