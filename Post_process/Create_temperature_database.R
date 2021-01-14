@@ -1,5 +1,18 @@
+###############################################################################################
+# Script: Create_temperature_databse.R
+# Author: Marc Peaucelle
+# Date: 01/2021
+# Description: This script convert thermistance and thermocouple voltage values to temperature
+# Project: Foliarduino - Bud temperature measurement with type-T thermocouples
+# Check https://foliarduino.com/t-type-thermocouples-for-bud-temperature-monitoring/ for a 
+# description of the device
+###############################################################################################
+library(xts)
+library(dplyr)
 rm(list=ls())
 workdir<-"directory with data"
+workdir<-"/media/marc/Store/Science_projects/FoliArduino/Tbud_data/"
+
 setwd(workdir)
 fic<-list.files(pattern = ".TXT")
 
@@ -35,28 +48,28 @@ R2 = R1 * (1023.0 / Cold_Vo - 1.0)
 # multiple approaches can be used to estimate temperature from a thermistor
 # see https://www.digikey.com/en/maker/projects/how-to-measure-temperature-with-an-ntc-thermistor/4a4b326095f144029df7f2eca589ca54
 
-# Approach 1: Steinhart-Hart equation: 1/T = A + Bln(R) + C(ln(R))3
-# coefficients can be estimated by fitting 3 measurements.
-c1 = 1.009249522e-03
-c2 = 2.378405444e-04
-c3 = 2.019202697e-07
-Tk = (1.0 / (c1 + c2*log(R2) + c3*log(R2)*log(R2)*log(R2)))
-Tcj = Tk - 273.15 # Cold temperature in 째C
+# # Approach 1: Steinhart-Hart equation: 1/T = A + Bln(R) + C(ln(R))3
+# # coefficients can be estimated by fitting 3 measurements --> Calibration should be done for each Thermocouple
+# c1 = 1.009249522e-03
+# c2 = 2.378405444e-04
+# c3 = 2.019202697e-07
+# Tk = (1.0 / (c1 + c2*log(R2) + c3*log(R2)*log(R2)*log(R2)))
+# Tcj = Tk - 273.15 # Cold temperature in 째C
 
 # # Approach 2: simplified version of Steinhart-Hart equation : 1/T = 1/Tref + (1/B) + ln (R/Rref)
 # # use B value from thermistor datasheet
 # # https://asset.conrad.com/media10/add/160267/c1/-/en/000500682DS01/fiche-technique-500682-thermistance-ntc-tdk-b57861s103f40-s861-1-pcs.pdf
-# B = 3988.0 # +/- 0.3%
-# Tref = 298.15 # 25째C
-# Rref = 10000.0 # 10kohms
-# Tk = (B * Tref) / (B + (Tref * log(R2 / Rref)))
-# Tcj = Tk - 273.15 # Cold temperature in 째C
+B = 3988.0 # +/- 0.3%
+Tref = 298.15 # 25째C
+Rref = 10000.0 # 10kohms
+Tk = (B * Tref) / (B + (Tref * log(R2 / Rref)))
+Tcj = Tk - 273.15 # Cold temperature in 째C
 
 # Step 3 - We convert Cold_Tc into voltage at the cold junction
 # lots of information here: http://www.mosaic-industries.com/embedded-systems/microcontroller-projects/temperature-measurement/thermocouple/cold-junction-compensation
 # information on converting temperature to voltage here: http://www.mosaic-industries.com/embedded-systems/microcontroller-projects/temperature-measurement/thermocouple/calibration-table#computing-cold-junction-voltages
 # The following table is of calibration coefficients for Type T thermocouple wires.
-# In our case we are only interested in temperatures between -20 and 70캜 corresponding to a range of -0.757 to 2.909 mV
+# In our case we are only interested in temperatures between -20 and 70?C corresponding to a range of -0.757 to 2.909 mV
 To<- 2.5000000E+01
 Vo<-	9.9198279E-01
 p1<-	4.0716564E-02
@@ -76,7 +89,7 @@ Vcj = Vo + num/denom # in mV
 # Step 4 - We calculate Bud temperature from the hot junction voltage
 # real thermocouple compensated voltage
 
-all_data$Hot_T<-all_data$Hot_T/1000 ###### convert from 킮 to mV
+all_data$Hot_T<-all_data$Hot_T/1000 ###### convert from ?V to mV
 
 Vtc<- all_data$Hot_T + Vcj
 
@@ -85,7 +98,7 @@ Vtc<- all_data$Hot_T + Vcj
 # http://www.mosaic-industries.com/embedded-systems/microcontroller-projects/temperature-measurement/thermocouple/type-t-calibration-table
 #                                                   Range
 # Voltage:	    -6.18 to -4.648 mV	| -4.648 to 0 mV	| 0 to 9.288 mV	| 9.288 to 20.872 mV
-# Temperature:	-250 to -150캜	    | -150 to 0캜	    | 0 to 200캜	  | 200 to 400캜
+# Temperature:	-250 to -150?C	    | -150 to 0?C	    | 0 to 200?C	  | 200 to 400?C
 #                                              Coefficients
 # T0	          -1.9243000E+02	    | -6.0000000E+01	| 1.3500000E+02	| 3.0000000E+02
 # V0	          -5.4798963E+00	    | -2.1528350E+00	| 5.9588600E+00	| 1.4861780E+01
@@ -125,4 +138,29 @@ Thj<-To[index] + num/denom
 
 all_data<-cbind(all_data,R2,Tcj,Vcj,Vtc, Thj)
 write.table(x=all_data,file="Bud_temperature.txt",col.names = TRUE,sep=";")
+
+############################ Plot Tbud, Tair and Tdif = Tbud-Tair for each Sensor
+# Function to plot Tbud, Tair and Tdif (Tbud-Tair)
+plot.temp<-function(Thermo="Thermocouple_1",filt=FALSE){ # filt = TRUE --> remove values with thermocouple fault detected
+  if (filt){
+    Tsel<-filter(all_data,Sensor==Thermo & Fault==0)
+  } else {
+    Tsel<-filter(all_data,Sensor==Thermo)
+  }
+  tstep<-as.POSIXlt(substr(Tsel$file,start=1,stop=15),format="%Y%m%d_%H%M%S")
+  
+  Tbud<-xts(cbind(Tair=Tsel$Tcj,
+                  Tbud=Tsel$Thj,
+                  Tdif=Tsel$Thj-Tsel$Tcj),tstep)
+  print(plot(Tbud))
+  return(Tbud)
+}
+
+Tbud1<-plot.temp("Thermocouple_1")
+Tbud2<-plot.temp("Thermocouple_2")
+Tbud3<-plot.temp("Thermocouple_3")
+Tbud4<-plot.temp("Thermocouple_4")
+
+# Plot a specific period
+plot(Tbud1["2021-01-10/2021-01-11"])
 
