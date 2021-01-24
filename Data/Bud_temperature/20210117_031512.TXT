@@ -1,0 +1,5 @@
+Sensor;Hot_T;MAX_T;Fault;Cold_T
+Thermocouple_1;-2.98;1.61;1;268.00
+Thermocouple_2;10.37;1.64;1;267.00
+Thermocouple_3;-2.98;1.66;1;268.00
+Thermocouple_4;-4.77;1.66;1;267.00
