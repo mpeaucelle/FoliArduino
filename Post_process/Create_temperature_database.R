@@ -11,7 +11,7 @@ library(xts)
 library(dplyr)
 rm(list=ls())
 workdir<-"directory with data"
-workdir<-"/media/marc/Store/Science_projects/FoliArduino/Tbud_data/"
+#workdir<-"/media/marc/Store/Science_projects/FoliArduino/Tbud_data/"
 
 setwd(workdir)
 fic<-list.files(pattern = ".TXT")
@@ -21,7 +21,7 @@ all_data<-NULL
 # Step 1 - We merge all data
 
 for ( i in fic ){
-  tmp<-read.table(file = i, sep=";", header = TRUE)
+  tmp<-read.table(file = i, sep=";", header = TRUE, na.strings = "NaN")
   year<-rep(as.numeric(substr(i,start = 1,stop=4)),4)
   month<-rep(as.numeric(substr(i,start = 5,stop=6)),4)
   day<-rep(as.numeric(substr(i,start = 7,stop=8)),4)
@@ -33,6 +33,7 @@ for ( i in fic ){
   all_data<-rbind(all_data,tmp)  
 }
 
+all_data<-na.exclude(all_data)
 # Step 2 - we compute cold junction temperature from thermistance
 Cold_Vo<-all_data$Cold_T # encoded on 1024 bits 
 # resistor used in serie with the thermistor
@@ -162,5 +163,10 @@ Tbud3<-plot.temp("Thermocouple_3")
 Tbud4<-plot.temp("Thermocouple_4")
 
 # Plot a specific period
-plot(Tbud1["2021-01-10/2021-01-11"])
 
+png("Thermocouple_1_Fig_Tree.png")
+zoo::plot.zoo(Tbud1["2021-01-17/2021-01-18"],col=c("black","red","green"), screens = 1,xlab="Time", las=1, main="Thermocouple 1 Ficus carica",ylab="Temperature (°C)",format='%d-%m-%y',)
+legend("top", inset=c(0,0), y.intersp = 1, legend = c("Tair", "Tbud","Tbud-Tair"),  lty = 1, bty = "n", col = c("black","red","green"), cex = 1)
+
+grid() 
+dev.off()
